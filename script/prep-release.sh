@@ -3,11 +3,17 @@
 
 set -e
 
+
+
 # make ipxe directory to store ipxe disks
 mkdir -p build/ipxe
 
 # pull down upstream iPXE
-git clone --depth 1 https://github.com/ipxe/ipxe.git ipxe_build
+#git clone --depth 1 https://github.com/ipxe/ipxe.git ipxe_build
+
+pushd ipxe_build/src
+make clean
+popd
 
 # copy iPXE config overrides into source tree
 cp ipxe/local/* ipxe_build/src/config/local/
@@ -23,7 +29,8 @@ IPXE_HASH=`git log -n 1 --pretty=format:"%H"`
 
 # generate netboot.xyz iPXE disks
 make bin/ipxe.dsk bin/ipxe.iso bin/ipxe.lkrn bin/ipxe.usb bin/ipxe.kpxe bin/undionly.kpxe \
-EMBED=../../ipxe/disks/netboot.xyz TRUST=ca-ipxe-org.crt,ca-netboot-xyz.crt
+EMBED=../../ipxe/disks/wtfboot
+#EMBED=../../ipxe/disks/netboot.xyz TRUST=ca-ipxe-org.crt,ca-netboot-xyz.crt
 mv bin/ipxe.dsk ../../build/ipxe/netboot.xyz.dsk
 mv bin/ipxe.iso ../../build/ipxe/netboot.xyz.iso
 mv bin/ipxe.lkrn ../../build/ipxe/netboot.xyz.lkrn
@@ -31,23 +38,28 @@ mv bin/ipxe.usb ../../build/ipxe/netboot.xyz.usb
 mv bin/ipxe.kpxe ../../build/ipxe/netboot.xyz.kpxe
 mv bin/undionly.kpxe ../../build/ipxe/netboot.xyz-undionly.kpxe
 
+make bin/1af41000.rom \
+EMBED=../../ipxe/disks/wtfboot
+mv bin/1af41000.rom ../../build/ipxe/netboot.xyz.1af41000.rom
+
 # generate netboot.xyz iPXE disk for Google Compute Engine
-make bin/ipxe.usb CONFIG=cloud EMBED=../../ipxe/disks/netboot.xyz-gce \
-TRUST=ca-ipxe-org.crt,ca-netboot-xyz.crt
-cp -f bin/ipxe.usb disk.raw
-tar Sczvf netboot.xyz-gce.tar.gz disk.raw
-mv netboot.xyz-gce.tar.gz ../../build/ipxe/netboot.xyz-gce.tar.gz
+#make bin/ipxe.usb CONFIG=cloud EMBED=../../ipxe/disks/netboot.xyz-gce \
+#TRUST=ca-ipxe-org.crt,ca-netboot-xyz.crt
+#cp -f bin/ipxe.usb disk.raw
+#tar Sczvf netboot.xyz-gce.tar.gz disk.raw
+#mv netboot.xyz-gce.tar.gz ../../build/ipxe/netboot.xyz-gce.tar.gz
 
 # generate netboot.xyz-packet iPXE disk
-make bin/undionly.kpxe \
-EMBED=../../ipxe/disks/netboot.xyz-packet TRUST=ca-ipxe-org.crt,ca-netboot-xyz.crt
-mv bin/undionly.kpxe ../../build/ipxe/netboot.xyz-packet.kpxe
+#make bin/undionly.kpxe \
+#EMBED=../../ipxe/disks/netboot.xyz-packet TRUST=ca-ipxe-org.crt,ca-netboot-xyz.crt
+#mv bin/undionly.kpxe ../../build/ipxe/netboot.xyz-packet.kpxe
 
 # generate EFI iPXE disks
 cp config/local/general.h.efi config/local/general.h
 make clean
 make bin-x86_64-efi/ipxe.efi \
-EMBED=../../ipxe/disks/netboot.xyz TRUST=ca-ipxe-org.crt,ca-netboot-xyz.crt
+EMBED=../../ipxe/disks/wtfboot
+#EMBED=../../ipxe/disks/netboot.xyz TRUST=ca-ipxe-org.crt,ca-netboot-xyz.crt
 mkdir -p efi_tmp/EFI/BOOT/
 cp bin-x86_64-efi/ipxe.efi efi_tmp/EFI/BOOT/bootx64.efi
 genisoimage -o ipxe.eiso efi_tmp
@@ -55,30 +67,32 @@ mv bin-x86_64-efi/ipxe.efi ../../build/ipxe/netboot.xyz.efi
 mv ipxe.eiso ../../build/ipxe/netboot.xyz-efi.iso
 
 # generate EFI arm64 iPXE disk
-make clean
-make CROSS_COMPILE=aarch64-linux-gnu- ARCH=arm64 \
-EMBED=../../ipxe/disks/netboot.xyz TRUST=ca-ipxe-org.crt,ca-netboot-xyz.crt \
-bin-arm64-efi/snp.efi
-mv bin-arm64-efi/snp.efi ../../build/ipxe/netboot.xyz-arm64.efi
+#make clean
+#make CROSS_COMPILE=aarch64-linux-gnu- ARCH=arm64 \
+#EMBED=../../ipxe/disks/netboot.xyz TRUST=ca-ipxe-org.crt,ca-netboot-xyz.crt \
+#bin-arm64-efi/snp.efi
+#mv bin-arm64-efi/snp.efi ../../build/ipxe/netboot.xyz-arm64.efi
 
 # generate netboot.xyz-packet-arm64 iPXE disk
-make clean
-make CROSS_COMPILE=aarch64-linux-gnu- ARCH=arm64 \
-EMBED=../../ipxe/disks/netboot.xyz-packet TRUST=ca-ipxe-org.crt,ca-netboot-xyz.crt \
-bin-arm64-efi/snp.efi
-mv bin-arm64-efi/snp.efi ../../build/ipxe/netboot.xyz-packet-arm64.efi
+#make clean
+#make CROSS_COMPILE=aarch64-linux-gnu- ARCH=arm64 \
+#EMBED=../../ipxe/disks/netboot.xyz-packet TRUST=ca-ipxe-org.crt,ca-netboot-xyz.crt \
+#bin-arm64-efi/snp.efi
+#mv bin-arm64-efi/snp.efi ../../build/ipxe/netboot.xyz-packet-arm64.efi
 
 # generate arm64 experimental
-cp config/local/nap.h.efi config/local/nap.h
-cp config/local/usb.h.efi config/local/usb.h
-make clean
-make CROSS_COMPILE=aarch64-linux-gnu- ARCH=arm64 \
-EMBED=../../ipxe/disks/netboot.xyz TRUST=ca-ipxe-org.crt,ca-netboot-xyz.crt \
-bin-arm64-efi/snp.efi
-mv bin-arm64-efi/snp.efi ../../build/ipxe/netboot.xyz-arm64-experimental.efi
+#cp config/local/nap.h.efi config/local/nap.h
+#cp config/local/usb.h.efi config/local/usb.h
+#make clean
+#make CROSS_COMPILE=aarch64-linux-gnu- ARCH=arm64 \
+#EMBED=../../ipxe/disks/netboot.xyz TRUST=ca-ipxe-org.crt,ca-netboot-xyz.crt \
+#bin-arm64-efi/snp.efi
+#mv bin-arm64-efi/snp.efi ../../build/ipxe/netboot.xyz-arm64-experimental.efi
 
 # return to root
 cd ../..
+
+exit
 
 # generate header for sha256-checksums file
 cd build/

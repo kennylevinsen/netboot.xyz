@@ -1,0 +1,3 @@
+#define CONSOLE_SERIAL
+#define CONSOLE_FRAMEBUFFER
+
